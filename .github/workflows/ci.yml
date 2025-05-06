@@ -1,0 +1,101 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Code Style Check
+      run: ./gradlew checkstyleMain checkstyleTest
+
+    - name: Build with Gradle
+      run: ./gradlew build
+
+    - name: Run tests
+      run: ./gradlew test
+
+    - name: Test Coverage Report
+      run: ./gradlew jacocoTestReport
+
+    - name: Quality Gate - Test Coverage
+      run: |
+        ./gradlew jacocoTestCoverageVerification
+        if [ $? -ne 0 ]; then
+          echo "Test coverage below threshold"
+          exit 1
+        fi
+
+    - name: Security Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
+
+    - name: Build Docker image
+      run: |
+        ./gradlew bootJar
+        docker build -t customer-api:${{ github.sha }} .
+
+    # In a real scenario, you would push to a registry
+    - name: Mock Docker Push
+      run: echo "Would push customer-api:${{ github.sha }} to registry"
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Development
+      run: |
+        echo "Deploying to development environment"
+        # In a real scenario, you would use kubectl to deploy to a K8s cluster
+        # kubectl apply -f k8s/
+
+    - name: Integration Tests
+      run: |
+        echo "Running integration tests against development environment"
+        # In a real scenario, you would run integration tests against the deployed app
+        # ./gradlew integrationTest
+
+  deploy-prod:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    # This would typically be a manual approval step in a real pipeline
+    environment:
+      name: production
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Production
+      run: |
+        echo "Deploying to production environment"
+        # In a real scenario, you would use kubectl to deploy to a K8s cluster
+        # kubectl apply -f k8s/

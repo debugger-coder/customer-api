@@ -1,0 +1,4 @@
+rootProject.name = 'customer-api'
+
+// Include the CLI consumer project
+include 'cli-consumer'

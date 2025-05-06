@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Add any dependencies needed for the CLI consumer
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+}
+
+application {
+    mainClass = 'Main'
+    mainClassName = 'Main'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'Main'
+    }
+    // Create a fat JAR with all dependencies
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Configure the existing run task provided by the application plugin
+run {
+    // Add default arguments if needed
+    args = []
+}
