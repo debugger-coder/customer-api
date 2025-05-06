@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
 
 jobs:
   build:
@@ -65,7 +65,7 @@ jobs:
   deploy-dev:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
 
     steps:
     - uses: actions/checkout@v3
@@ -85,7 +85,7 @@ jobs:
   deploy-prod:
     needs: deploy-dev
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
 
     # This would typically be a manual approval step in a real pipeline
     environment:
